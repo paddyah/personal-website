@@ -13,8 +13,10 @@ type Page struct {
 	Body  []byte
 }
 
-var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html", "tmpl/index.html"))
-var validPath = regexp.MustCompile("^/()$")
+var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html", "tmpl/index.html", "tmpl/admin.html"))
+var validPath = regexp.MustCompile("^$")
+var validHomePath = regexp.MustCompile("^/$")
+var validAdminPath = regexp.MustCompile("^/admin/$")
 
 func (p *Page) save() error {
 	filename := p.Title + ".txt"
@@ -42,7 +44,21 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 }
 
 func homePageHandler(w http.ResponseWriter, r *http.Request) {
+	m := validHomePath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return
+	}
 	renderTemplate(w, "index", nil)
+}
+
+func adminPageHandler(w http.ResponseWriter, r *http.Request) {
+	m := validAdminPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return
+	}
+	renderTemplate(w, "admin", nil)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -82,6 +98,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 
 func main() {
 	http.HandleFunc("/", homePageHandler)
+	http.HandleFunc("/admin/", adminPageHandler)
 	/*http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))*/
 	log.Fatal(http.ListenAndServe(":8080", nil))
