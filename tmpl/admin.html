@@ -1,0 +1,14 @@
+<body onload="password()">
+    <script>
+        function password() {
+            let pass = prompt("Password for special Paddy Pages");
+            if (pass != null) {
+                if (pass != "paddy") {
+                    password();
+                }
+            }
+        }
+    </script>
+
+    <h1>Admin Page!</h1>
+</body>
