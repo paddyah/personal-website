@@ -8,9 +8,8 @@ import (
 	"regexp"
 )
 
-var templates = template.Must(template.ParseFiles("tmpl/index.html", "tmpl/admin.html"))
-var validHomePath = regexp.MustCompile("^/$")
-var validAdminPath = regexp.MustCompile("^/admin/$")
+var templates = template.Must(template.ParseFiles("tmpl/index.html", "tmpl/admin.html", "tmpl/blog_admin.html", "tmpl/edit_blog_post.html"))
+var validPath = regexp.MustCompile("^(/admin|^)/(blog/)?(create/)?$")
 
 //go:embed admin_username.txt
 var admin_username string
@@ -18,22 +17,37 @@ var admin_username string
 //go:embed admin_password.txt
 var admin_password string
 
-func homePageHandler(w http.ResponseWriter, r *http.Request) {
-	m := validHomePath.FindStringSubmatch(r.URL.Path)
+func checkPath(w http.ResponseWriter, r *http.Request) bool {
+	m := validPath.FindStringSubmatch(r.URL.Path)
 	if m == nil {
 		http.NotFound(w, r)
-		return
+		return false
 	}
-	renderTemplate(w, "index")
+	return true
+}
+
+func homePageHandler(w http.ResponseWriter, r *http.Request) {
+	if checkPath(w, r) {
+		renderTemplate(w, "index")
+	}
 }
 
 func adminPageHandler(w http.ResponseWriter, r *http.Request) {
-	m := validAdminPath.FindStringSubmatch(r.URL.Path)
-	if m == nil {
-		http.NotFound(w, r)
-		return
+	if checkPath(w, r) {
+		renderTemplate(w, "admin")
 	}
-	renderTemplate(w, "admin")
+}
+
+func blogAdminHandler(w http.ResponseWriter, r *http.Request) {
+	if checkPath(w, r) {
+		renderTemplate(w, "blog_admin")
+	}
+}
+
+func blogCreateHandler(w http.ResponseWriter, r *http.Request) {
+	if checkPath(w, r) {
+		renderTemplate(w, "edit_blog_post")
+	}
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string) {
@@ -61,5 +75,7 @@ func basicAuth(next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	http.HandleFunc("/", homePageHandler)
 	http.HandleFunc("/admin/", basicAuth(adminPageHandler))
+	http.HandleFunc("/admin/blog/", basicAuth(blogAdminHandler))
+	http.HandleFunc("/admin/blog/create/", basicAuth(blogCreateHandler))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
