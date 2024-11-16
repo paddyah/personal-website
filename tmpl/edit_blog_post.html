@@ -1,10 +1,28 @@
-<h1>Creating New Post</h1>
+{{if .Title}}
+    <h1>Editing {{.Title}}</h1>
+{{else}}
+    <h1>Creating New Post</h1>
+{{end}}
 <form action="/admin/blog/save/" method="post">
-    <textarea id="blogPost" name="blogPost"></textarea>
-    <button type="button" onclick="startEditor()">Open Editor</button>
-    <br>
+    {{if .Title}}
+        <input type="hidden" id="oldTitle" name="oldTitle" value={{.Title}}>
+    {{end}}
+    <label for="title">Blog Title:</label><br>
+    {{if .Title}}
+        <input type="text" id="title" name="title" value={{.Title}}><br><br>
+    {{else}}
+        <input type="text" id="title" name="title"><br><br>
+    {{end}}
+    <textarea id="blogPost" name="blogPost">{{.Body}}</textarea>
+    <button type="button" onclick="startEditor()">Open Editor</button><br>
     <input type="submit" value="Save Post">
 </form>
+{{if .}}
+    <form action="/admin/blog/delete/" method="post">
+        <input type="hidden" id="title" name="title" value="{{.Title}}">
+        <input type="submit" value="Delete Post">
+    </form>
+{{end}}
 <script src="http://unpkg.com/stackedit-js@1.0.7/docs/lib/stackedit.min.js"></script>
 <script>
     function startEditor() {
