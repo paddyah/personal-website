@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-var templates = template.Must(template.ParseFiles("tmpl/index.html", "tmpl/admin.html", "tmpl/blog_admin.html", "tmpl/edit_blog_post.html"))
-var validPath = regexp.MustCompile("^/$|^(?:/admin/(?:blog/(?:edit/(?:(.+))|delete/|save/|create/)?)?)$")
+var templates = template.Must(template.ParseFiles("tmpl/index.html", "tmpl/admin.html", "tmpl/blog_admin.html", "tmpl/edit_blog_post.html", "tmpl/render_post.html"))
+var validPath = regexp.MustCompile("^/(?:about/)?$|^/admin/(?:blog/(?:edit/(?:(.+))|delete/|save/|create/)?)?")
 
 //go:embed admin_username.txt
 var admin_username string
@@ -38,6 +38,13 @@ func checkErr(w http.ResponseWriter, err error) {
 
 func homePageHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index", nil)
+}
+
+func aboutPageHandler(w http.ResponseWriter, r *http.Request) {
+	post, err := os.ReadFile("post_html/" + "about_me.html")
+	checkErr(w, err)
+
+	renderTemplate(w, "render_post", template.HTML(post))
 }
 
 func adminPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -73,26 +80,40 @@ func blogEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func blogSaveHandler(w http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 	case "POST":
 		err := r.ParseForm()
 		checkErr(w, err)
 		post := r.FormValue("blogPost")
 		title := r.FormValue("title")
+		postHTML := r.FormValue("hiddenHTML")
 		// this doesn't have to optimized at all so an "edit" can just be a deletion and creation
 		if r.FormValue("oldTitle") != "" {
+			// removing old value
 			err := os.Remove("posts/" + r.FormValue("oldTitle") + ".md")
 			checkErr(w, err)
+
+			// saving new value without automatically generating a time for the title
 			f, err := os.Create("posts/" + title + ".md")
 			checkErr(w, err)
 			_, err = f.WriteString(post)
 			checkErr(w, err)
+
 			f.Close()
 		} else {
-			f, err := os.Create("posts/" + time.Now().Format("2006-01-02") + " - " + title + ".md")
+			fileName := time.Now().Format("2006-01-02") + " - " + title
+
+			// saving markdown
+			f, err := os.Create("posts/" + fileName + ".md")
 			checkErr(w, err)
 			_, err = f.WriteString(post)
+			checkErr(w, err)
+			f.Close()
+
+			// saving html
+			f, err = os.Create("post_html/" + fileName + ".html")
+			checkErr(w, err)
+			_, err = f.WriteString(postHTML)
 			checkErr(w, err)
 			f.Close()
 		}
@@ -103,7 +124,6 @@ func blogSaveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func blogDeleteHandler(w http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 	case "POST":
 		err := r.ParseForm()
@@ -150,11 +170,12 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 
 func main() {
 	http.HandleFunc("/", makeHandler(homePageHandler))
+	http.HandleFunc("/about/", makeHandler(basicAuth(aboutPageHandler)))
 	http.HandleFunc("/admin/", makeHandler(basicAuth(adminPageHandler)))
 	http.HandleFunc("/admin/blog/", makeHandler(basicAuth(blogAdminHandler)))
 	http.HandleFunc("/admin/blog/create/", makeHandler(basicAuth(blogCreateHandler)))
 	http.HandleFunc("/admin/blog/save/", makeHandler(basicAuth(blogSaveHandler)))
-	http.HandleFunc("/admin/blog/edit/", basicAuth(blogEditHandler))
+	http.HandleFunc("/admin/blog/edit/", basicAuth(blogEditHandler)) // TODO make data handler
 	http.HandleFunc("/admin/blog/delete/", makeHandler(basicAuth(blogDeleteHandler)))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
