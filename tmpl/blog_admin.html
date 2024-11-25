@@ -1,5 +1,9 @@
 <h1>Blog Admin</h1>
-<a href="/admin/blog/create/">Create New Blog Post</a>
+<a href="/admin/blog/create/">Create new blog post</a>
 <div>
-    <h2>Edit Existing Blog Post</h2>
+    <h2>Edit Existing Post</h2>
+    {{range .}}
+        <a href={{.Url}}>{{.Title}}</a>
+        <br>
+    {{end}}
 </div>
