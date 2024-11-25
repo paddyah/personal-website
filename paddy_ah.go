@@ -11,8 +11,15 @@ import (
 	"time"
 )
 
-var templates = template.Must(template.ParseFiles("tmpl/index.html", "tmpl/admin.html", "tmpl/blog_admin.html", "tmpl/edit_blog_post.html", "tmpl/render_post.html"))
-var validPath = regexp.MustCompile("^/(?:about/)?$|^/admin/(?:blog/(?:edit/(?:(.+))|delete/|save/|create/)?)?")
+var templates = template.Must(template.ParseFiles("tmpl/index.html",
+	"tmpl/admin.html",
+	"tmpl/blog_admin.html",
+	"tmpl/edit_blog_post.html",
+	"tmpl/render_post.html",
+	"tmpl/blog_list.html",
+))
+
+var validPath = regexp.MustCompile("^/(?:about/|blog/(?:view/(.+))?)?$|^/admin/(?:blog/(?:edit/(.+)|delete/|save/|create/)?)?")
 
 //go:embed admin_username.txt
 var admin_username string
@@ -47,6 +54,30 @@ func aboutPageHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "render_post", template.HTML(post))
 }
 
+func blogHomeHandler(w http.ResponseWriter, r *http.Request) {
+	files, err := os.ReadDir("posts")
+	checkErr(w, err)
+	var blogPosts []BlogPostEntry
+	blogPosts = make([]BlogPostEntry, 0)
+	for _, file := range files {
+		post := BlogPostEntry{Title: strings.TrimSuffix(file.Name(), ".md"), Url: "view/" + strings.TrimSuffix(file.Name(), ".md")}
+		blogPosts = append(blogPosts, post)
+	}
+	renderTemplate(w, "blog_list", blogPosts)
+}
+
+func blogViewHandler(w http.ResponseWriter, r *http.Request) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+	}
+	fileName := m[1]
+	post, err := os.ReadFile("post_html/" + fileName + ".html")
+	checkErr(w, err)
+
+	renderTemplate(w, "render_post", template.HTML(post))
+}
+
 func adminPageHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "admin", nil)
 }
@@ -72,7 +103,7 @@ func blogEditHandler(w http.ResponseWriter, r *http.Request) {
 	if m == nil {
 		http.NotFound(w, r)
 	}
-	fileName := m[1]
+	fileName := m[2]
 	post, err := os.ReadFile("posts/" + fileName)
 	checkErr(w, err)
 	blogPost := BlogPost{Title: strings.TrimSuffix(fileName, ".md"), Body: string(post)}
@@ -89,8 +120,10 @@ func blogSaveHandler(w http.ResponseWriter, r *http.Request) {
 		postHTML := r.FormValue("hiddenHTML")
 		// this doesn't have to optimized at all so an "edit" can just be a deletion and creation
 		if r.FormValue("oldTitle") != "" {
-			// removing old value
+			// removing old values
 			err := os.Remove("posts/" + r.FormValue("oldTitle") + ".md")
+			checkErr(w, err)
+			err = os.Remove("post_html/" + r.FormValue("oldTitle") + ".html")
 			checkErr(w, err)
 
 			// saving new value without automatically generating a time for the title
@@ -98,7 +131,12 @@ func blogSaveHandler(w http.ResponseWriter, r *http.Request) {
 			checkErr(w, err)
 			_, err = f.WriteString(post)
 			checkErr(w, err)
+			f.Close()
 
+			f, err = os.Create("post_html/" + title + ".html")
+			checkErr(w, err)
+			_, err = f.WriteString(postHTML)
+			checkErr(w, err)
 			f.Close()
 		} else {
 			fileName := time.Now().Format("2006-01-02") + " - " + title
@@ -130,6 +168,8 @@ func blogDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		checkErr(w, err)
 		title := r.FormValue("title")
 		err = os.Remove("posts/" + title + ".md")
+		checkErr(w, err)
+		err = os.Remove("post_html/" + title + ".html")
 		checkErr(w, err)
 	default:
 		http.NotFound(w, r)
@@ -170,7 +210,9 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 
 func main() {
 	http.HandleFunc("/", makeHandler(homePageHandler))
-	http.HandleFunc("/about/", makeHandler(basicAuth(aboutPageHandler)))
+	http.HandleFunc("/about/", makeHandler(aboutPageHandler))
+	http.HandleFunc("/blog/", makeHandler(blogHomeHandler))
+	http.HandleFunc("/blog/view/", makeHandler(blogViewHandler))
 	http.HandleFunc("/admin/", makeHandler(basicAuth(adminPageHandler)))
 	http.HandleFunc("/admin/blog/", makeHandler(basicAuth(blogAdminHandler)))
 	http.HandleFunc("/admin/blog/create/", makeHandler(basicAuth(blogCreateHandler)))
