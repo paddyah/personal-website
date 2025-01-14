@@ -17,9 +17,10 @@ var templates = template.Must(template.ParseFiles("tmpl/index.html",
 	"tmpl/edit_blog_post.html",
 	"tmpl/render_post.html",
 	"tmpl/blog_list.html",
+	"tmpl/links.html",
 ))
 
-var validPath = regexp.MustCompile("^/(?:about/|blog/(?:view/(.+))?)?$|^/admin/(?:blog/(?:edit/(.+)|delete/|save/|create/)?)?")
+var validPath = regexp.MustCompile("^/(?:about/|links/|blog/(?:view/(.+))?)?$|^/admin/(?:blog/(?:edit/(.+)|delete/|save/|create/)?)?")
 
 //go:embed admin_username.txt
 var admin_username string
@@ -52,6 +53,10 @@ func aboutPageHandler(w http.ResponseWriter, r *http.Request) {
 	checkErr(w, err)
 
 	renderTemplate(w, "render_post", template.HTML(post))
+}
+
+func linkPageHandler(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "links", nil)
 }
 
 func blogHomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -211,6 +216,7 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 func main() {
 	http.HandleFunc("/", makeHandler(homePageHandler))
 	http.HandleFunc("/about/", makeHandler(aboutPageHandler))
+	http.HandleFunc("/links/", makeHandler(linkPageHandler))
 	http.HandleFunc("/blog/", makeHandler(blogHomeHandler))
 	http.HandleFunc("/blog/view/", makeHandler(blogViewHandler))
 	http.HandleFunc("/admin/", makeHandler(basicAuth(adminPageHandler)))
@@ -219,5 +225,8 @@ func main() {
 	http.HandleFunc("/admin/blog/save/", makeHandler(basicAuth(blogSaveHandler)))
 	http.HandleFunc("/admin/blog/edit/", basicAuth(blogEditHandler)) // TODO make data handler
 	http.HandleFunc("/admin/blog/delete/", makeHandler(basicAuth(blogDeleteHandler)))
+
+	fs := http.FileServer(http.Dir("./css"))
+	http.Handle("/css/", http.StripPrefix("/css", fs))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

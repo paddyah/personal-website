@@ -1,0 +1,33 @@
+body {
+    background-color: rgb(27, 14, 1);
+}
+
+* {
+    color: white;
+}
+
+:is(h1, h2, h3, h4, h5, h6) {
+    font-family: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+}
+
+p {
+    font-family: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+    font-size: 20px;
+    font-weight: 400;
+    font-style: normal;
+}
+
+a {
+    font-family: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+    font-size: 20px;
+    font-weight: 400;
+    font-style: normal;
+}
+
+blockquote {
+    background: #396270;
+    border-left: 10px solid #508EA5;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+    quotes: "\201C""\201D""\2018""\2019";
+}
