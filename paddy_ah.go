@@ -223,10 +223,10 @@ func main() {
 	http.HandleFunc("/admin/blog/", makeHandler(basicAuth(blogAdminHandler)))
 	http.HandleFunc("/admin/blog/create/", makeHandler(basicAuth(blogCreateHandler)))
 	http.HandleFunc("/admin/blog/save/", makeHandler(basicAuth(blogSaveHandler)))
-	http.HandleFunc("/admin/blog/edit/", basicAuth(blogEditHandler)) // TODO make data handler
+	http.HandleFunc("/admin/blog/edit/", basicAuth(blogEditHandler))
 	http.HandleFunc("/admin/blog/delete/", makeHandler(basicAuth(blogDeleteHandler)))
 
-	fs := http.FileServer(http.Dir("./css"))
-	http.Handle("/css/", http.StripPrefix("/css", fs))
+	fs := http.FileServer(http.Dir("./static/"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
