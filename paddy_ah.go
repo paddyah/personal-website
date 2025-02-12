@@ -65,8 +65,12 @@ func blogHomeHandler(w http.ResponseWriter, r *http.Request) {
 	var blogPosts []BlogPostEntry
 	blogPosts = make([]BlogPostEntry, 0)
 	for _, file := range files {
-		post := BlogPostEntry{Title: strings.TrimSuffix(file.Name(), ".md"), Url: "view/" + strings.TrimSuffix(file.Name(), ".md")}
-		blogPosts = append(blogPosts, post)
+		// crude drafts implementation.
+		// due to ease of implementation and ability to migrate to more robust solution if necessary this is fine enough to use right now
+		if !strings.Contains(file.Name(), "DRAFT") {
+			post := BlogPostEntry{Title: strings.TrimSuffix(file.Name(), ".md"), Url: "view/" + strings.TrimSuffix(file.Name(), ".md")}
+			blogPosts = append(blogPosts, post)
+		}
 	}
 	renderTemplate(w, "blog_list", blogPosts)
 }
