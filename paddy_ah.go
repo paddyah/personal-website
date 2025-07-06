@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -72,6 +73,9 @@ func blogHomeHandler(w http.ResponseWriter, r *http.Request) {
 			blogPosts = append(blogPosts, post)
 		}
 	}
+	slices.SortFunc(blogPosts, func(a, b BlogPostEntry) int {
+		return strings.Compare(strings.ToLower(b.Title), strings.ToLower(a.Title))
+	})
 	renderTemplate(w, "blog_list", blogPosts)
 }
 
